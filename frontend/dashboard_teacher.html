@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Créer un examen</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="form-container">
+        <h1>Créer un Examen</h1>
+        <form id="examForm">
+            <input type="text" name="titre" placeholder="Titre de l'examen" required>
+            <textarea name="description" placeholder="Description" required></textarea>
+            <input type="text" name="public" placeholder="Public ciblé (ex: 2ème année, MIP S4)" required>
+            <button type="submit">Créer l'examen</button>
+    </div>
+    </form>
+
+    <div id="examLink" style="display:none;">
+        <p>📎 Lien généré : <span id="link"></span></p>
+        <button onclick="window.location.href='questions_teacher.html'">Ajouter des questions</button>
+    </div>
+
+    <script>
+        const token = localStorage.getItem("token");
+        const examForm = document.getElementById("examForm");
+
+        examForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const data = Object.fromEntries(new FormData(examForm).entries());
+
+            const res = await fetch("http://localhost:5000/api/exam/create", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(data)
+            });
+            const result = await res.json();
+
+            if (result.exam) {
+                localStorage.setItem("examId", result.exam._id);
+                localStorage.setItem("examLink", result.exam.lien);
+                document.getElementById("link").textContent = result.exam.lien;
+                document.getElementById("examLink").style.display = "block";
+            } else {
+                alert(result.message);
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Accéder à un Examen</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="form-container">
+        <h1>Bienvenue Étudiant</h1>
+        <form id="accessForm">
+            <input type="text" id="examLink" placeholder="Lien de l'examen" required>
+            <button type="submit">Accéder à l'examen</button>
+        </form>
+    </div>
+
+    <script>
+        const token = localStorage.getItem("token");
+
+        document.getElementById("accessForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const link = document.getElementById("examLink").value.trim();
+
+            const res = await fetch(`http://localhost:5000/api/student/access/${link}`, {
+                method: "GET",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+
+            const result = await res.json();
+            if (result._id) {
+                localStorage.setItem("examData", JSON.stringify(result));
+                window.location.href = "exam_student.html";
+            } else {
+                alert("Lien invalide ou examen introuvable.");
+            }
+        });
+    </script>
+</body>
+
+</html>

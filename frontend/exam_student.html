@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Examen</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <h1>Examen</h1>
+    <div id="info"></div>
+    <div id="questionContainer"></div>
+
+
+    <div id="nextWrapper" class="button-wrapper" style="display: none;">
+        <button id="nextBtn">Suivant</button>
+    </div>
+
+    <script>
+        const token = localStorage.getItem("token");
+        const exam = JSON.parse(localStorage.getItem("examData"));
+        const container = document.getElementById("questionContainer");
+        const info = document.getElementById("info");
+        const nextBtn = document.getElementById("nextBtn");
+        const nextWrapper = document.getElementById("nextWrapper");
+
+        let currentIndex = 0;
+        let responses = [];
+        let timer;
+
+        function showQuestion(index) {
+            clearTimeout(timer);
+            const q = exam.questions[index];
+            info.innerHTML = `
+        <h3>Question ${index + 1} / ${exam.questions.length}</h3>
+        <p><strong>Temps restant :</strong> <span id='time'>${q.duree}</span> sec</p>`;
+
+            let html = `<p><strong>${q.enonce}</strong></p>`;
+            if (q.type === "directe") {
+                html += `<input type='text' id='reponse'>`;
+            } else {
+                html += q.options
+                    .map(
+                        (opt) =>
+                            `<label><input type='checkbox' name='qcm' value='${opt.text}'> ${opt.text}</label><br>`
+                    )
+                    .join("");
+            }
+
+            container.innerHTML = html;
+            nextWrapper.style.display = "block";
+            let t = q.duree;
+            timer = setInterval(() => {
+                document.getElementById("time").textContent = --t;
+                if (t <= 0) {
+                    clearInterval(timer);
+                    nextBtn.click();
+                }
+            }, 1000);
+        }
+
+        nextBtn.addEventListener("click", () => {
+            const q = exam.questions[currentIndex];
+            let answer = "";
+
+            if (q.type === "directe") {
+                answer = document.getElementById("reponse").value.trim();
+            } else {
+                answer = Array.from(document.querySelectorAll("input[name='qcm']:checked")).map(
+                    (cb) => cb.value
+                );
+            }
+
+            responses.push({ questionId: q._id, reponseEtudiant: answer });
+            currentIndex++;
+
+            if (currentIndex < exam.questions.length) {
+                showQuestion(currentIndex);
+            } else {
+                submitAnswers();
+            }
+        });
+
+        async function submitAnswers() {
+            const res = await fetch(`http://localhost:5000/api/student/submit/${exam._id}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ answers: responses }),
+            });
+            const result = await res.json();
+            localStorage.setItem("score", result.score);
+            window.location.href = "result_student.html";
+        }
+
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+            await fetch("http://localhost:5000/api/student/geolocation", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    userId: exam.userId,
+                    lat: pos.coords.latitude,
+                    lng: pos.coords.longitude,
+                }),
+            });
+        });
+
+        showQuestion(currentIndex);
+    </script>
+</body>
+
+</html>

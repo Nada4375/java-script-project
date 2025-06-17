@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Résultat</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <h1>Résultat de l'examen</h1>
+    <div id="score"></div>
+
+    <script>
+        const score = localStorage.getItem("score");
+        document.getElementById("score").innerHTML = `<h2>Votre score final : ${score}/100</h2>`;
+    </script>
+</body>
+
+</html>

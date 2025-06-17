@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Ajouter des questions</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="form-container">
+        <h1>Ajout de Questions</h1>
+
+        <select id="questionType">
+            <option value="directe">Question Directe</option>
+            <option value="qcm">QCM</option>
+        </select>
+
+        <form id="questionForm">
+            <textarea name="enonce" placeholder="Énoncé de la question" required></textarea>
+            <input type="number" name="note" placeholder="Note" required>
+            <input type="number" name="duree" placeholder="Durée (en secondes)" required>
+
+            <div id="directeFields">
+                <input type="text" name="reponse" placeholder="Réponse attendue">
+                <input type="number" name="tolerance" placeholder="Tolérance (ex: 0.1)">
+            </div>
+
+            <div id="qcmFields" style="display:none">
+                <div id="options"></div>
+                <button type="button" onclick="addOption()">+ Ajouter option</button>
+            </div>
+
+            <button type="submit">Ajouter la question</button>
+        </form>
+    </div>
+
+    <script>
+        const token = localStorage.getItem("token");
+        const examId = localStorage.getItem("examId");
+
+        const typeSelect = document.getElementById("questionType");
+        const directeFields = document.getElementById("directeFields");
+        const qcmFields = document.getElementById("qcmFields");
+
+        typeSelect.addEventListener("change", () => {
+            if (typeSelect.value === "qcm") {
+                directeFields.style.display = "none";
+                qcmFields.style.display = "block";
+            } else {
+                qcmFields.style.display = "none";
+                directeFields.style.display = "block";
+            }
+        });
+
+        function addOption() {
+            const container = document.getElementById("options");
+            const opt = document.createElement("div");
+            opt.innerHTML = `<input type='text' placeholder='Option'><input type='checkbox' title='Bonne réponse'>`;
+            container.appendChild(opt);
+        }
+
+        const questionForm = document.getElementById("questionForm");
+        questionForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = new FormData(questionForm);
+            const data = Object.fromEntries(formData.entries());
+            data.type = typeSelect.value;
+
+            if (data.type === "qcm") {
+                data.options = [];
+                document.querySelectorAll("#options div").forEach(div => {
+                    const input = div.querySelector("input[type='text']");
+                    const check = div.querySelector("input[type='checkbox']");
+                    if (input.value.trim()) {
+                        data.options.push({ text: input.value, correct: check.checked });
+                    }
+                });
+            }
+
+            const res = await fetch(`http://localhost:5000/api/exam/${examId}/question`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await res.json();
+            alert(result.message);
+            questionForm.reset();
+        });
+    </script>
+</body>
+
+</html>
